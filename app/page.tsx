@@ -1,95 +1,128 @@
-import Image from 'next/image'
-import styles from './page.module.css'
+"use client";
+import { ChangeEvent, useEffect, useState } from "react";
+import { Container, Fab, TextField } from "@mui/material";
+import { Product } from "./types/product";
+import AddEditProductModal from "./components/AddEditProductModal";
+import ProductTable from "./components/ProductTable";
+import styles from "./page.module.css";
 
 export default function Home() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [scrumMasterFilter, setScrumMasterFilter] = useState('');
+  const [developerFilter, setDeveloperFilter] = useState('');
+  const [editModalIsOpen, setEditModalIsOpen] = useState(false);
+  const [currEditProduct, setCurrEditProduct] = useState<Product | null>(null);
+
+  const getProductsFromAPI = async (
+    filterName?: string,
+    filterValue?: string
+  ) => {
+    setIsLoading(true);
+    let getProductsURL = "api/products";
+    if (filterName && filterValue) {
+      getProductsURL += `?${filterName}=${filterValue}`;
+    }
+    const res = await fetch(getProductsURL, {
+      method: "GET",
+      headers: {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      },
+    });
+    if (!res.ok) {
+      throw new Error("Failed to fetch data");
+    }
+    const data = await res.json();
+    setIsLoading(false);
+    setProducts(data.products);
+  };
+
+  useEffect(() => {
+    getProductsFromAPI();
+  }, []);
+
+  const filterByScrumMaster = (e: ChangeEvent<HTMLInputElement>) => {
+    setDeveloperFilter('');
+    const newScrumMasterFilterValue = e.target.value;
+    setScrumMasterFilter(newScrumMasterFilterValue);
+    getProductsFromAPI("scrumMaster", newScrumMasterFilterValue);
+  };
+
+  const filterByDeveloper = (e: ChangeEvent<HTMLInputElement>) => {
+    setScrumMasterFilter('');
+    const newDevFilterValue = e.target.value;
+    setDeveloperFilter(newDevFilterValue);
+    getProductsFromAPI("developers", newDevFilterValue);
+  };
+
+  const openEditModal = () => {
+    setEditModalIsOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setCurrEditProduct(null);
+    setEditModalIsOpen(false);
+  };
+
+  const editProduct = (editProduct: Product) => {
+    setCurrEditProduct(editProduct);
+    setEditModalIsOpen(true);
+  };
+
+  const updateProductInList = (updatedProduct: Product) => {
+    const updatedProducts = products.map((product) =>
+      product.id === updatedProduct.id ? updatedProduct : product
+    );
+    setProducts(updatedProducts);
+  };
+
+  const addNewProductToList = (newProduct: Product) => {
+    const updatedProducts = [newProduct, ...products];
+    setProducts(updatedProducts);
+  };
+
   return (
     <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+      <h1>ECC Product Database</h1>
+      <Fab
+        color="primary"
+        aria-label="add"
+        variant="extended"
+        onClick={openEditModal}
+      >
+        Add New Product
+      </Fab>
+      <Container style={{ textAlign: 'center' }}>
+        <TextField
+          type="text"
+          value={scrumMasterFilter}
+          style={{ backgroundColor: "white" }}
+          placeholder="Filter by scrum master"
+          onChange={filterByScrumMaster}
         />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore the Next.js 13 playground.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
+        <TextField
+          type="text"
+          value={developerFilter}
+          style={{ backgroundColor: "white" }}
+          placeholder="Filter by developer"
+          onChange={filterByDeveloper}
+        />
+      </Container>
+      {products.length > 0 ? (
+        <>
+          <h4 className={styles.results}>{products.length} products</h4>
+          <ProductTable products={products} editProduct={editProduct} />
+        </>
+      ) : (
+        <p>{isLoading ? 'Loading...' : 'No Results'}</p>
+      )}
+      <AddEditProductModal
+        isOpen={editModalIsOpen}
+        closeModal={closeEditModal}
+        currEditProduct={currEditProduct}
+        updateProductInList={updateProductInList}
+        addNewProductToList={addNewProductToList}
+      />
     </main>
-  )
+  );
 }
