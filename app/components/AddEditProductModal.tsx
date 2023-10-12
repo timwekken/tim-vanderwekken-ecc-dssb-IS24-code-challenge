@@ -63,7 +63,7 @@ export default function AddEditProductModal({
 
   const handleSubmit = async (formData: Product) => {
     const res = await fetch(`/api/products/${formData.id ? "edit" : "add"}`, {
-      method: "POST",
+      method: formData.id ? "PUT" : "POST",
       body: JSON.stringify(formData),
     });
     if (res.ok) {

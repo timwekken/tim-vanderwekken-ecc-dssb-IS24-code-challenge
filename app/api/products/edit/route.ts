@@ -4,7 +4,7 @@ import { NextApiResponse } from 'next';
 /**
  * @swagger
  * /api/products/edit:
- *   post:
+ *   put:
  *     summary: Edit an existing product
  *     tags:
  *       - Products
@@ -39,7 +39,7 @@ import { NextApiResponse } from 'next';
  *       500:
  *         description: Internal server error
  */
-export async function POST(req: Request, res: NextApiResponse) {
+export async function PUT(req: Request, res: NextApiResponse) {
   try {
     const editedProduct = await req.json();
     const updatedProduct = addOrEditProduct(editedProduct);
